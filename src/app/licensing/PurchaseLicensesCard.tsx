@@ -26,17 +26,17 @@ function PurchaseLicensesCard() {
           Purchase licenses for {organization?.name}.
         </CardTitle>
         <CardDescription>
-          You'll need to purchase licenses before you can use Team Task.
+          You'll need to purchase licenses before you can use Softcodes.
         </CardDescription>
       </CardHeader>
       <CardContent className='flex flex-col gap-4'>
         <div className='flex gap-2 items-baseline'>
           <Input min={1} className="w-[75px]" type="number" onChange={e => setCount(e.target.valueAsNumber)} value={count} />
-          <span className="uppercase text-xs text-gray-600">users @ $2/user/mo</span>
+          <span className="uppercase text-xs text-gray-600">users - €39/user/mo</span>
         </div>
         <div className="items-baseline flex gap-2">
           <span>Total:</span>
-          <Label className='font-bold text-xl'>${count * 2}.00/month</Label>
+          <Label className='font-bold text-xl'>€{count * 39}.00/month</Label>
         </div>
       </CardContent>
       <CardFooter>

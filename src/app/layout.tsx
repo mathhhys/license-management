@@ -7,7 +7,7 @@ import Navbar from "@/components/navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Team Task",
+  title: "Softcodes",
   description: "A team-based task management app built with Clerk Organizations.",
 };
 

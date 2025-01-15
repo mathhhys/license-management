@@ -17,7 +17,7 @@ function Navbar() {
   return (
     <nav className="flex p-2 justify-between items-center bg-slate-100 border-b border-slate-200">
       <div className="flex items-center gap-2">
-        <Link href="/">Team Task</Link>
+        <Link href="/">License Management</Link>
       </div>
       <SignedIn>
         <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { canCreateTasks, getUserInfo } from "./security";
 import { getDb } from "@/db/db";
-import { tasks } from "@/db/schema";
+import { tasks, orgs } from "@/db/schema";
 import { and, eq, InferSelectModel } from "drizzle-orm";
 
 if (!process.env.DATABASE_URL) {
@@ -59,17 +59,13 @@ export async function updateTask(taskId: number, name: string, description: stri
 
 export async function getLicenseCount(clerkOrgId: string) {
   const db = await getDb()
-  const row = await db.query.orgs.findFirst({
-    where: (orgs, { eq }) => eq(orgs.org_id, clerkOrgId)
-  })
-  return row?.license_count || 0
+  const row = await db.select().from(orgs).where(eq(orgs.org_id, clerkOrgId)).limit(1).execute()
+  return row[0]?.license_count || 0
 }
 
 export async function getStripeCustomerIdFromOrgId(clerkOrgId: string) {
   const db = await getDb()
-  const row = await db.query.orgs.findFirst({
-    where: (orgs, { eq }) => eq(orgs.org_id, clerkOrgId)
-  })
-  if(!row) return null
-  return row.stripe_customer_id
+  const row = await db.select().from(orgs).where(eq(orgs.org_id, clerkOrgId)).limit(1).execute()
+  if(!row[0]) return null
+  return row[0].stripe_customer_id
 }

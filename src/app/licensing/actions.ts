@@ -35,11 +35,12 @@ export async function getCheckoutUrl(clerkOrgId: string, quantity: number) {
     customer: stripeId,
     line_items: [
       {
-        price: 'price_1PajlBGVJ29rMAV1JmqqgEwa',
+        price: 'price_1QTPajH6gWxKcaTXHxQ6hQyH',
         quantity: quantity,
         adjustable_quantity: {
           enabled: true,
-          minimum: 1
+          minimum: 1,
+          maximum: 1000,
         }
       }
     ],
