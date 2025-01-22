@@ -52,9 +52,13 @@ export async function getCheckoutUrl(clerkOrgId: string, quantity: number) {
 
 export async function getPortalUrl(clerkOrgId: string) {
   const stripeId = await getStripeCustomerIdFromOrgId(clerkOrgId)
-  const session = await stripe.billingPortal.sessions.create({
-    customer: stripeId,
-    return_url: 'http://localhost:3005/licensing',
-  });
-  return session.url
+  if (stripeId) {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: stripeId,
+      return_url: 'http://localhost:3005/licensing',
+    });
+    return session.url
+  } else {
+    throw new Error('Stripe customer ID not found');
+  }
 }
