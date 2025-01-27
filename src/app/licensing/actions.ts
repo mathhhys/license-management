@@ -44,8 +44,8 @@ export async function getCheckoutUrl(clerkOrgId: string, quantity: number) {
         }
       }
     ],
-    success_url: "http://localhost:3005/licensing",
-    cancel_url: "http://localhost:3005/licensing",
+    success_url: "https://softcodeslicense.netlify.app/licensing",
+    cancel_url: "https://softcodeslicense.netlify.app/licensing",
   })
   return session.url
 }
@@ -55,7 +55,7 @@ export async function getPortalUrl(clerkOrgId: string) {
   if (stripeId) {
     const session = await stripe.billingPortal.sessions.create({
       customer: stripeId,
-      return_url: 'http://localhost:3005/licensing',
+      return_url: "https://softcodeslicense.netlify.app/licensing",
     });
     return session.url
   } else {
