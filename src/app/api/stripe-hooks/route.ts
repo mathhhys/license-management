@@ -9,27 +9,37 @@ export async function POST(request: NextRequest) {
   const updateLicenseCount = async (stripeCustomerId: string, quantity: number) => {
     const sql = neon(process.env.DATABASE_URL as string);
 
-    // Fetch the current license count
-    const result = await sql`select license_count from orgs where stripe_customer_id=${stripeCustomerId}`;
-    if (!result.length) {
-      throw new Error("Customer not found");
+    try {
+      // Fetch the current license count
+      const result = await sql`select license_count from orgs where stripe_customer_id=${stripeCustomerId} for update`;
+      if (!result.length) {
+        throw new Error("Customer not found");
+      }
+
+      const currentLicenseCount = result[0].license_count;
+
+      // Validate the quantity
+      if (typeof quantity !== 'number' || isNaN(quantity)) {
+        throw new Error("Invalid quantity");
+      }
+
+      // Calculate the new license count
+      const newLicenseCount = currentLicenseCount + quantity;
+
+      // Update the license count
+      await sql`update orgs set license_count=${newLicenseCount} where stripe_customer_id=${stripeCustomerId}`;
+
+      console.log(`Updated license count for customer ${stripeCustomerId} from ${currentLicenseCount} to ${newLicenseCount}`);
+    } catch (err) {
+      console.error(`Error updating license count for customer ${stripeCustomerId}:`, err);
+      throw err; // Re-throw the error to handle it in the outer scope
     }
-
-    const currentLicenseCount = result[0].license_count;
-
-    // Calculate the new license count
-    const newLicenseCount = currentLicenseCount + quantity;
-
-    // Update the license count
-    await sql`update orgs set license_count=${newLicenseCount} where stripe_customer_id=${stripeCustomerId}`;
-
-    console.log(`Updated license count for customer ${stripeCustomerId} from ${currentLicenseCount} to ${newLicenseCount}`);
   };
 
   const sig = request.headers.get('stripe-signature');
 
   if (!sig) {
-    throw new Error("Missing signature");
+    return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
   try {
@@ -48,6 +58,7 @@ export async function POST(request: NextRequest) {
           throw new Error("Invalid quantity");
         }
 
+        // Update the license count
         await updateLicenseCount(
           subscription.customer as string,
           quantity
@@ -56,11 +67,10 @@ export async function POST(request: NextRequest) {
       default:
         console.log(`Unhandled event type ${event.type}`);
     }
+
     return new NextResponse(null, { status: 200 });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({
-      "error": err?.toString()
-    }, { status: 400 });
+    console.error("Webhook error:", err);
+    return NextResponse.json({ error: err?.toString() }, { status: 400 });
   }
 }
