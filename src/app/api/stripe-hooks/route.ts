@@ -8,38 +8,26 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
 export async function POST(request: NextRequest) {
   const updateLicenseCount = async (stripeCustomerId: string, quantity: number) => {
     const sql = neon(process.env.DATABASE_URL as string);
-
-    try {
-      // Fetch the current license count
-      const result = await sql`select license_count from orgs where stripe_customer_id=${stripeCustomerId} for update`;
-      if (!result.length) {
-        throw new Error("Customer not found");
-      }
-
-      const currentLicenseCount = result[0].license_count;
-
-      // Validate the quantity
-      if (typeof quantity !== 'number' || isNaN(quantity)) {
-        throw new Error("Invalid quantity");
-      }
-
-      // Calculate the new license count
-      const newLicenseCount = currentLicenseCount + quantity;
-
-      // Update the license count
-      await sql`update orgs set license_count=${newLicenseCount} where stripe_customer_id=${stripeCustomerId}`;
-
-      console.log(`Updated license count for customer ${stripeCustomerId} from ${currentLicenseCount} to ${newLicenseCount}`);
-    } catch (err) {
-      console.error(`Error updating license count for customer ${stripeCustomerId}:`, err);
-      throw err; // Re-throw the error to handle it in the outer scope
+    
+    // First, get the current license count
+    const result = await sql`SELECT license_count FROM orgs WHERE stripe_customer_id=${stripeCustomerId}`;
+    
+    let currentCount = 0;
+    if (result && result.length > 0) {
+      currentCount = result[0].license_count || 0;
     }
+    
+    // Calculate the new total
+    const newTotal = currentCount + quantity;
+    
+    // Update with the new total
+    await sql`UPDATE orgs SET license_count=${newTotal} WHERE stripe_customer_id=${stripeCustomerId}`;
   };
 
   const sig = request.headers.get('stripe-signature');
 
   if (!sig) {
-    return NextResponse.json({ error: "Missing signature" }, { status: 400 });
+    throw new Error("Missing signature");
   }
 
   try {
@@ -49,28 +37,20 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
-        const subscription = event.data.object as Stripe.Subscription;
-
-        // Access the quantity from the first item in the subscription
-        const quantity = subscription.items.data[0].quantity;
-
-        if (typeof quantity !== 'number' || isNaN(quantity)) {
-          throw new Error("Invalid quantity");
-        }
-
-        // Update the license count
         await updateLicenseCount(
-          subscription.customer as string,
-          quantity
+          event.data.object.customer as string,
+          // @ts-ignore
+          event.data.object.quantity
         );
         break;
       default:
         console.log(`Unhandled event type ${event.type}`);
     }
-
     return new NextResponse(null, { status: 200 });
   } catch (err) {
-    console.error("Webhook error:", err);
-    return NextResponse.json({ error: err?.toString() }, { status: 400 });
+    console.error(err);
+    return NextResponse.json({
+      "error": err?.toString()
+    }, { status: 400 });
   }
 }
