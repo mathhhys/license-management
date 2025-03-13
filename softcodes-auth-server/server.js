@@ -45,116 +45,116 @@ app.post('/api/prepare-auth', (req, res) => {
 });
 
 app.get('/callback', async (req, res) => {
-  const { code, state } = req.query;
+    const { code, state } = req.query;
+    
+    if (!code || !state) {
+      return res.status(400).send(`
+        <html>
+          <head><title>Authentication Failed</title></head>
+          <body>
+            <h1>Authentication Failed</h1>
+            <p>Invalid or missing parameters.</p>
+            <p>You can close this window and try again.</p>
+          </body>
+        </html>
+      `);
+    }
+    
+    // Get the clientId associated with this state
+    const authRequest = pendingAuth[state];
+    if (!authRequest) {
+      return res.status(400).send(`
+        <html>
+          <head><title>Authentication Failed</title></head>
+          <body>
+            <h1>Authentication Failed</h1>
+            <p>Invalid or expired authentication request.</p>
+            <p>You can close this window and try again.</p>
+          </body>
+        </html>
+      `);
+    }
+    
+    const { clientId } = authRequest;
   
-  if (!code || !state) {
-    return res.status(400).send(`
-      <html>
-        <head><title>Authentication Failed</title></head>
-        <body>
-          <h1>Authentication Failed</h1>
-          <p>Invalid or missing parameters.</p>
-          <p>You can close this window and try again.</p>
-        </body>
-      </html>
-    `);
-  }
+    try {
+      const tokenResponse = await axios.post('https://api.clerk.dev/v1/oauth/token', {
+        grant_type: 'authorization_code',
+        client_id: process.env.CLERK_PUBLISHABLE_KEY,
+        client_secret: process.env.CLERK_SECRET_KEY,
+        code,
+        redirect_uri: 'https://enterprise-softcodes.io/callback'
+      });
   
-  // Get the clientId associated with this state
-  const authRequest = pendingAuth[state];
-  if (!authRequest) {
-    return res.status(400).send(`
-      <html>
-        <head><title>Authentication Failed</title></head>
-        <body>
-          <h1>Authentication Failed</h1>
-          <p>Invalid or expired authentication request.</p>
-          <p>You can close this window and try again.</p>
-        </body>
-      </html>
-    `);
-  }
+      const { access_token, refresh_token } = tokenResponse.data;
+      
+      // Get user information
+      const userResponse = await axios.get('https://api.clerk.dev/v1/user', {
+        headers: { Authorization: `Bearer ${access_token}` }
+      });
   
-  const { clientId } = authRequest;
-
-  try {
-    const tokenResponse = await axios.post('https://api.clerk.dev/v1/oauth/token', {
-      grant_type: 'authorization_code',
-      client_id: process.env.CLERK_PUBLISHABLE_KEY,
-      client_secret: process.env.CLERK_SECRET_KEY,
-      code,
-      redirect_uri: 'https://enterprise-softcodes.io/callback'
-    });
-
-    const { access_token, refresh_token } = tokenResponse.data;
-    
-    // Get user information
-    const userResponse = await axios.get('https://api.clerk.dev/v1/user', {
-      headers: { Authorization: `Bearer ${access_token}` }
-    });
-
-    const userId = userResponse.data.id;
-    
-    // Store tokens indexed by clientId (not state) for polling
-    tokens[clientId] = {
-      access_token,
-      refresh_token,
-      userId,
-      timestamp: Date.now()
-    };
-    
-    // Store user session for later use
-    userSessions[userId] = {
-      access_token,
-      refresh_token,
-      clientId,
-      timestamp: Date.now()
-    };
-    
-    // Clean up the pending auth request
-    delete pendingAuth[state];
-    
-    // Clean up tokens after 24 hours
-    setTimeout(() => {
-      if (tokens[clientId]) {
-        delete tokens[clientId];
-      }
-    }, 24 * 60 * 60 * 1000);
-
-    return res.send(`
-      <html>
-        <head>
-          <title>Authentication Successful</title>
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-            .success { color: #4CAF50; }
-            button { padding: 10px 20px; background-color: #4CAF50; color: white; 
-                     border: none; border-radius: 4px; cursor: pointer; }
-          </style>
-        </head>
-        <body>
-          <h1 class="success">Authentication Successful!</h1>
-          <p>You have successfully authenticated with Softcodes.</p>
-          <p>You can now close this window and return to VSCode.</p>
-          <button onclick="window.close()">Close Window</button>
-        </body>
-      </html>
-    `);
-  } catch (error) {
-    console.error('Token exchange error:', error);
-    return res.status(500).send(`
-      <html>
-        <head><title>Authentication Failed</title></head>
-        <body>
-          <h1>Authentication Failed</h1>
-          <p>There was an error processing your authentication: ${error.message}</p>
-          <p>You can close this window and try again.</p>
-        </body>
-      </html>
-    `);
-  }
-});
-
+      const userId = userResponse.data.id;
+      
+      // Store tokens indexed by clientId (not state) for polling
+      tokens[clientId] = {
+        access_token,
+        refresh_token,
+        userId,
+        timestamp: Date.now()
+      };
+      
+      // Store user session for later use
+      userSessions[userId] = {
+        access_token,
+        refresh_token,
+        clientId,
+        timestamp: Date.now()
+      };
+      
+      // Clean up the pending auth request
+      delete pendingAuth[state];
+      
+      // Clean up tokens after 24 hours
+      setTimeout(() => {
+        if (tokens[clientId]) {
+          delete tokens[clientId];
+        }
+      }, 24 * 60 * 60 * 1000);
+  
+      return res.send(`
+        <html>
+          <head>
+            <title>Authentication Successful</title>
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+              .success { color: #4CAF50; }
+              button { padding: 10px 20px; background-color: #4CAF50; color: white; 
+                       border: none; border-radius: 4px; cursor: pointer; }
+            </style>
+          </head>
+          <body>
+            <h1 class="success">Authentication Successful!</h1>
+            <p>You have successfully authenticated with Softcodes.</p>
+            <p>You can now close this window and return to VSCode.</p>
+            <button onclick="window.close()">Close Window</button>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('Token exchange error:', error);
+      return res.status(500).send(`
+        <html>
+          <head><title>Authentication Failed</title></head>
+          <body>
+            <h1>Authentication Failed</h1>
+            <p>There was an error processing your authentication: ${error.message}</p>
+            <p>You can close this window and try again.</p>
+          </body>
+        </html>
+      `);
+    }
+  });
+  
 app.get('/api/check-auth-status', (req, res) => {
   const { clientId } = req.query;
   
@@ -294,6 +294,30 @@ app.get('/api/user-info', async (req, res) => {
     });
   }
 });
+
+// New endpoint to prepare for authentication
+app.post('/api/prepare-auth', (req, res) => {
+    const { state, clientId } = req.body;
+    
+    if (!state || !clientId) {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
+    
+    // Store the mapping between state and clientId
+    pendingAuth[state] = {
+      clientId,
+      timestamp: Date.now()
+    };
+    
+    // Clean up old pending auth requests after 10 minutes
+    setTimeout(() => {
+      if (pendingAuth[state]) {
+        delete pendingAuth[state];
+      }
+    }, 10 * 60 * 1000);
+    
+    return res.json({ success: true });
+  });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
