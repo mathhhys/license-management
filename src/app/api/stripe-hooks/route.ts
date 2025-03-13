@@ -6,40 +6,9 @@ const stripe = new Stripe(process.env.STRIPE_KEY as string);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
 
 export async function POST(request: NextRequest) {
-  const updateLicenseCount = async (stripeCustomerId: string, newQuantity: number, eventType: string) => {
+  const updateLicenseCount = async (stripeCustomerId: string, quantity: number) => {
     const sql = neon(process.env.DATABASE_URL as string);
-    
-    // For subscription.created events, we just set the license count directly
-    if (eventType === 'customer.subscription.created') {
-      await sql`UPDATE orgs SET license_count=${newQuantity} WHERE stripe_customer_id=${stripeCustomerId}`;
-      return;
-    }
-    
-    // For subscription.updated events, we need to get the previous quantity and calculate the difference
-    if (eventType === 'customer.subscription.updated') {
-      // Get the current license count from the database
-      const result = await sql`SELECT license_count FROM orgs WHERE stripe_customer_id=${stripeCustomerId}`;
-      
-      // Set current license count to 0 if not found
-      let currentCount = 0;
-      if (result && result.length > 0) {
-        currentCount = result[0].license_count || 0;
-      }
-      
-      // Get the previous subscription data to see the old quantity
-      const subscriptions = await stripe.subscriptions.list({
-        customer: stripeCustomerId,
-        limit: 1
-      });
-      
-      if (subscriptions.data.length > 0) {
-        // Update the license count to the new quantity
-        await sql`UPDATE orgs SET license_count=${newQuantity} WHERE stripe_customer_id=${stripeCustomerId}`;
-      } else {
-        // If we can't find previous subscription data, just set to the new quantity
-        await sql`UPDATE orgs SET license_count=${newQuantity} WHERE stripe_customer_id=${stripeCustomerId}`;
-      }
-    }
+    await sql`update orgs set license_count=${quantity} where stripe_customer_id=${stripeCustomerId}`;
   };
 
   const sig = request.headers.get('stripe-signature');
@@ -58,8 +27,7 @@ export async function POST(request: NextRequest) {
         await updateLicenseCount(
           event.data.object.customer as string,
           // @ts-ignore
-          event.data.object.quantity,
-          event.type
+          event.data.object.quantity
         );
         break;
       default:
