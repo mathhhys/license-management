@@ -4,9 +4,10 @@ import { getTasks } from "./actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { isLicensed, canCreateTasks, canEditTask } from "./security";
+import TokenCard from "./TokenCard"; // Import with explicit file extension
 
 export default async function Home() {
-  const tasks = await getTasks()
+  const tasks = await getTasks();
 
   return (
     <div className='flex flex-col'>
@@ -19,11 +20,18 @@ export default async function Home() {
           </AlertDescription>
         </Alert>
       )}
+      
       <AddTaskForm disabled={!canCreateTasks()} />
+      
       <div className='flex flex-col gap-2 p-2'>
         {tasks.map(task =>
           <TaskRow key={task.id ?? 'default-key'} task={task} disabled={!canEditTask(task.created_by_id ?? '')} />
         )}
+      </div>
+      
+      {/* Include the token generation functionality as a client component */}
+      <div className="mt-6">
+        <TokenCard />
       </div>
     </div>
   );
