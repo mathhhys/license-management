@@ -4,22 +4,33 @@ function TokenGenerator() {
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
   
   const generateToken = async () => {
     setLoading(true);
+    setError('');
+    
     try {
+      // Updated to include proper headers and error handling
       const response = await fetch('/account/generate-vscode-token', {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
-      if (!response.ok) throw new Error('Failed to generate token');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || 'Failed to generate token');
+      }
       
       const data = await response.json();
       setToken(data.token);
-      setLoading(false);
     } catch (error) {
       console.error('Error:', error);
+      setError(error.message || 'Failed to generate token. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -34,6 +45,8 @@ function TokenGenerator() {
     <div className="token-generator">
       <h3>VSCode Extension Integration</h3>
       <p>Generate a token to use with the Softcodes VSCode extension.</p>
+      
+      {error && <div className="error-message">{error}</div>}
       
       {!token ? (
         <button 
@@ -52,6 +65,7 @@ function TokenGenerator() {
               value={token} 
               readOnly 
               className="token-input"
+              onClick={(e) => e.target.select()}
             />
             <button onClick={copyToken} className="copy-btn">
               {copied ? 'Copied!' : 'Copy'}
