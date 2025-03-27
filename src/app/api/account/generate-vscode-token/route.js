@@ -32,4 +32,4 @@ export async function POST(request) {
       details: error.message 
     }, { status: 500 });
   }
-}c
+}
