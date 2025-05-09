@@ -35,7 +35,7 @@ export async function getCheckoutUrl(clerkOrgId: string, quantity: number) {
     customer: stripeId,
     line_items: [
       {
-        price: 'price_1QTPajH6gWxKcaTXHxQ6hQyH',
+        price: 'price_1QhGIuH6gWxKcaTXR6BOKtm7',
         quantity: quantity,
         adjustable_quantity: {
           enabled: true,

@@ -40,9 +40,7 @@ const ManageLicensesCard = ({ licensedUsersCount, purchasedLicensesCount }: Prop
 
     try {
       setIsAddingLicenses(true);
-      // Use purchasedLicensesCount from props, adding the new quantity
-      const newTotalLicenses = purchasedLicensesCount + licenseQuantity;
-      const url = await getCheckoutUrl(organization.id, newTotalLicenses);
+      const url = await getCheckoutUrl(organization.id, licenseQuantity);
       window.location.href = url as string;
     } catch (error) {
       console.error('Failed to get checkout URL:', error);
