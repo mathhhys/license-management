@@ -18,15 +18,33 @@ export async function POST(request) {
     
     console.log('Generating token for:', { userId, sessionId });
     
-    // Generate a token without specifying a template
-    // This will use the default JWT template
-    const token = await clerkClient.sessions.getToken(sessionId);
+    // IMPORTANT: Use the exact template name as created in the Clerk Dashboard
+    // Replace "vscode-extension" with the actual name you used when creating the template
+    const templateName = "long-lived-token";
     
-    console.log('Token generated successfully');
-    
-    return NextResponse.json({ token });
+    try {
+      // Generate a token using the JWT template
+      const token = await clerkClient.sessions.getToken(sessionId, templateName);
+      
+      console.log('Token generated successfully using template:', templateName);
+      
+      return NextResponse.json({ 
+        token,
+        message: "Long-lived token generated successfully"
+      });
+    } catch (error) {
+      console.error(`Error generating token with template "${templateName}":`, error);
+      
+      // If there's an error with the template, provide detailed information to help debug
+      return NextResponse.json({ 
+        error: 'Failed to generate token with template',
+        details: error.message,
+        templateName,
+        suggestion: "Please ensure the JWT template exists in your Clerk Dashboard and has the exact name specified"
+      }, { status: 500 });
+    }
   } catch (error) {
-    console.error('Error generating VSCode token:', error);
+    console.error('Error in token generation endpoint:', error);
     return NextResponse.json({ 
       error: 'Failed to generate token', 
       details: error.message 

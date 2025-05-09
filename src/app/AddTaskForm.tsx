@@ -23,7 +23,7 @@ function AddTaskForm({ disabled }: Props) {
         autoFocus
         type='text'
         name='name'
-        placeholder='What do you need to do?'
+        placeholder=''
         className='disabled:cursor-not-allowed'
         disabled={disabled}/>
       <Button type='submit' className='disabled:cursor-not-allowed' disabled={disabled}>Add</Button>
