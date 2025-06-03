@@ -22,8 +22,10 @@ const ManageLicensesCard = ({ licensedUsersCount, purchasedLicensesCount }: Prop
 
   async function onManageSubscriptionClicked() {
     try {
+      console.log('Attempt to get portal URL for organization ID:', organization?.id);
       setIsLoading(true);
       const url = await getPortalUrl(organization?.id as string);
+      console.log('Received portal URL:', url);
       window.location.href = url as string;
     } catch (error) {
       console.error('Failed to get portal URL:', error);
@@ -39,8 +41,10 @@ const ManageLicensesCard = ({ licensedUsersCount, purchasedLicensesCount }: Prop
     }
 
     try {
+      console.log('Attempting to add licenses:', licenseQuantity);
       setIsAddingLicenses(true);
       const url = await getCheckoutUrl(organization.id, licenseQuantity);
+      console.log('Received checkout URL:', url);
       window.location.href = url as string;
     } catch (error) {
       console.error('Failed to get checkout URL:', error);
