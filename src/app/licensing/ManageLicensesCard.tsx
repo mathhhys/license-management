@@ -21,18 +21,31 @@ const ManageLicensesCard = ({ licensedUsersCount, purchasedLicensesCount }: Prop
   const [isAddingLicenses, setIsAddingLicenses] = useState(false);
 
   async function onManageSubscriptionClicked() {
-    try {
-      console.log('Attempt to get portal URL for organization ID:', organization?.id);
-      setIsLoading(true);
-      const url = await getPortalUrl(organization?.id as string);
-      console.log('Received portal URL:', url);
-      window.location.href = url as string;
-    } catch (error) {
-      console.error('Failed to get portal URL:', error);
-    } finally {
-      setIsLoading(false);
+  try {
+    if (!organization?.id) {
+      console.error('No organization ID available');
+      return;
     }
+    
+    console.log('Attempt to get portal URL for organization ID:', organization.id);
+    setIsLoading(true);
+    
+    const url = await getPortalUrl(organization.id);
+    
+    if (!url) {
+      throw new Error('No portal URL received');
+    }
+    
+    console.log('Received portal URL:', url);
+    window.location.href = url;
+  } catch (error) {
+    console.error('Failed to get portal URL:', error);
+    // Consider showing user-friendly error message here
+  } finally {
+    setIsLoading(false);
   }
+}
+
 
   async function onAddLicensesClicked() {
     if (!organization) {
